@@ -17,6 +17,9 @@ resource "aws_instance" "nginx_instance" {
     key_name        = aws_key_pair.ec2_key.key_name # AWS에서 생성한 SSH 키 적용
     security_groups = [aws_security_group.nginx_sg.name]
 
+     # 작업 -> 보안 -> IAM 역할 수정
+    iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+    
     # 인스턴스를 다시 만들때 빠르게 교체 하기 위한 옵션
     lifecycle {
         create_before_destroy = true
@@ -25,10 +28,25 @@ resource "aws_instance" "nginx_instance" {
     # User 데이터 변경시에 인스턴스 재생성 옵션
     user_data_replace_on_change = true
 
-    # EC2 시작 시 Nginx 설치 및 실행을 위한 User Data
-    user_data = <<-EOF
+# EC2 시작 시 Nginx 설치 및 실행을 위한 User Data
+user_data = <<-EOF
                 #!/bin/bash
                 yum update -y
+
+                # Ruby 설치
+                yum install -y ruby wget
+
+                # CodeDeploy Agent 설치
+                cd /home/ec2-user
+                wget https://aws-codedeploy-ap-northeast-2.s3.ap-northeast-2.amazonaws.com/latest/install
+                chmod +x ./install
+                ./install auto
+
+                # CodeDeploy Agent 서비스 시작
+                systemctl start codedeploy-agent
+                systemctl enable codedeploy-agent
+
+                # nginx 설치
                 amazon-linux-extras install nginx1 -y
                 systemctl start nginx
                 systemctl enable nginx
