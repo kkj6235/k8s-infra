@@ -23,4 +23,13 @@ terraform {
       version = "~> 2.24"
     }
   }
+
+  backend "s3" {
+    bucket         = "cwave-terraform-state-2025-kkj"
+    key            = "eks/terraform.tfstate"
+    region         = "ap-northeast-2"
+    dynamodb_table = "cwave-terraform-locks"
+    encrypt        = true
+  }
 }
+
